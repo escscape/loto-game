@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Русское лото — Онлайн</title>
+  <style>
+    body { 
+      font-family: system-ui, sans-serif; 
+      margin: 0; 
+      padding: 12px; 
+      background: #1e5631; 
+      color: #fff; 
+    }
+    
+    h1 { 
+      font-size: 20px; 
+      margin: 8px 0; 
+      text-align: center; 
+    }
+    
+    .panel { 
+      display: none; 
+      background: rgba(0,0,0,0.2); 
+      padding: 20px; 
+      border-radius: 12px; 
+      max-width: 500px; 
+      margin: 0 auto; 
+    }
+    
+    .panel.active { 
+      display: block; 
+    }
+    
+    .input-group { 
+      margin-bottom: 12px; 
+    }
+    
+    input { 
+      width: 100%; 
+      padding: 12px; 
+      border-radius: 8px; 
+      border: none; 
+      font-size: 16px; 
+      box-sizing: border-box; 
+    }
+    
+    button { 
+      width: 100%; 
+      padding: 14px; 
+      border: none; 
+      border-radius: 8px; 
+      font-size: 16px; 
+      font-weight: bold; 
+      cursor: pointer; 
+      margin-bottom: 8px; 
+    }
+    
+    .btn-main { background: #f0c040; color: #000; }
+    .btn-green { background: #4caf50; color: #fff; }
+    .btn-red { background: #e53935; color: #fff; }
+    
+    .status { 
+      font-size: 15px; 
+      margin: 8px 0; 
+      padding: 10px; 
+      border-radius: 8px; 
+      background: rgba(0,0,0,0.3); 
+      text-align: center; 
+    }
+    
+    .win { 
+      background: #f0c040; 
+      color: #000; 
+      font-weight: bold; 
+    }
+    
+    /* Экран ведущего */
+    .last { 
+      font-size: 80px; 
+      text-align: center; 
+      margin: 10px 0; 
+      font-weight: bold; 
+      min-height: 100px; 
+      color: #f0c040; 
+    }
+    
+    .drawn-list { 
+      display: flex; 
+      flex-wrap: wrap; 
+      gap: 4px; 
+      margin-top: 12px; 
+      justify-content: center; 
+    }
+    
+    .drawn-list span { 
+      background: #fff; 
+      color: #000; 
+      padding: 4px 8px; 
+      border-radius: 6px; 
+      font-size: 14px; 
+      font-weight: bold; 
+    }
+    
+    /* Карточки */
+    .card-count { 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      gap: 10px; 
+      margin: 12px 0; 
+    }
+    
+    .card-count button { 
+      width: auto; 
+      padding: 8px 16px; 
+      margin: 0; 
+      background: #2d7a45; 
+      color: #fff; 
+    }
+    
+    .card-count button.active { 
+      background: #f0c040; 
+      color: #000; 
+    }
+    
+    .card-wrap { 
+      display: inline-block; 
+      margin: 0 auto 12px; 
+      background: #fff; 
+      border-radius: 8px; 
+      padding: 8px; 
+    }
+    
+    .card-wrap .row { 
+      display: flex; 
+    }
+    
+    .cell { 
+      width: 40px; 
+      height: 40px; 
+      margin: 2px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      font-size: 18px; 
+      font-weight: bold; 
+      border-radius: 6px; 
+      color: #000; 
+    }
+    
+    .cell.empty { background: #e0e0e0; }
+    .cell.num { background: #f5f5f5; border: 2px solid #ccc; cursor: pointer; }
+    .cell.num.marked { background: #4caf50; color: #fff; border-color: #2e7d32; }
+    .cell.num.wrong { background: #e53935; color: #fff; }
+  </style>
+</head>
+<body>
+
+  <h1>🎲 Русское лото — Онлайн</h1>
+
+  <!-- ЭКРАН ВХОДА -->
+  <div id="panel-login" class="panel active">
+    <div style="text-align:center; margin-bottom:20px">
+      <button class="btn-main" onclick="createGame()">Создать игру (Я ведущий)</button>
+      
+      <div style="margin:20px 0; opacity:0.5">— или —</div>
+      
+      <div class="input-group">
+        <input type="number" id="joinCode" placeholder="Введите код комнаты" inputmode="numeric">
+      </div>
+      
+      <button class="btn-green" onclick="joinGame()">Войти в игру</button>
+    </div>
+  </div>
+
+  <!-- ЭКРАН ВЕДУЩЕГО -->
+  <div id="panel-host" class="panel">
+    <div class="status" style="font-size:24px; font-weight:bold">
+      Код комнаты: <span id="hostRoomCode" style="color:#f0c040"></span>
+    </div>
+    
+    <button class="btn-main" style="font-size:24px; padding:20px" onclick="drawNumber()">Достать бочонок</button>
+    
+    <div class="last" id="lastNum">—</div>
+    <div class="status" id="hostStatus">Осталось: 90</div>
+    <div class="drawn-list" id="drawnList"></div>
+    
+    <button class="btn-red" style="margin-top:20px" onclick="resetGame()">Начать заново</button>
+  </div>
+
+  <!-- ЭКРАН ИГРОКА -->
+  <div id="panel-player" class="panel">
+    <div class="status" id="playerStatus">Ожидание бочонков...</div>
+    
+    <div class="card-count">
+      <span>Карточек:</span>
+      <button onclick="setCardCount(1)" class="count-btn active" data-count="1">1</button>
+      <button onclick="setCardCount(2)" class="count-btn" data-count="2">2</button>
+      <button onclick="setCardCount(3)" class="count-btn" data-count="3">3</button>
+    </div>
+
+    <div id="cardsArea" style="text-align:center"></div>
+  </div>
+
+  <script>
+    let ws;
+    let isHost = false;
+    let roomCode = '';
+    let cardCount = 1;
+    let currentCards = [];
+    let drawnNumbers = [];
+
+    // Генератор карточек
+    function makeCard() {
+      const cols = [[1,9],[10,19],[20,29],[30,39],[40,49],[50,59],[60,69],[70,79],[80,90]];
+      
+      const colNumbers = cols.map(([min, max]) => {
+        const pool = [];
+        for (let i = min; i <= max; i++) pool.push(i);
+        for (let i = pool.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+        return pool.slice(0, 3);
+      });
+
+      let counts, attempts = 0;
+      do {
+        counts = Array(9).fill(1); 
+        let extra = 6;
+        while (extra > 0) { 
+          const c = Math.floor(Math.random() * 9); 
+          if (counts[c] < 3) { 
+            counts[c]++; 
+            extra--; 
+          } 
+        }
+        attempts++;
+      } while (attempts < 100 && !canDistribute(counts));
+
+      const grid = Array.from({length: 3}, () => Array(9).fill(null));
+      
+      const colSlots = counts.map((cnt) => {
+        const rows = [0,1,2];
+        for (let i = rows.length - 1; i > 0; i--) { 
+          const j = Math.floor(Math.random() * (i + 1)); 
+          [rows[i], rows[j]] = [rows[j], rows[i]]; 
+        }
+        return rows.slice(0, cnt).sort();
+      });
+
+      colSlots.forEach((rows, col) => {
+        const nums = colNumbers[col].slice(0, rows.length);
+        rows.forEach((r, idx) => { 
+          grid[r][col] = nums[idx]; 
+        });
+      });
+      
+      return grid;
+    }
+
+    function canDistribute(counts) {
+      const memo = new Set();
+      
+      function rec(idx, remaining) {
+        if (idx === 9) return remaining.every(r => r === 0);
+        const key = idx + '|' + remaining.join(',');
+        if (memo.has(key)) return false;
+        const c = counts[idx];
+        
+        for (let a = 0; a <= 1; a++) {
+          for (let b = 0; b <= 1; b++) {
+            for (let d = 0; d <= 1; d++) {
+              if (a + b + d !== c) continue;
+              const nr = [remaining[0]-a, remaining[1]-b, remaining[2]-d];
+              if (nr.every(x => x >= 0)) { 
+                if (rec(idx+1, nr)) return true; 
+              }
+            }
+          }
+        }
+        
+        memo.add(key); 
+        return false;
+      }
+      return rec(0, [5,5,5]);
+    }
+
+    // WebSocket
+    function connect(onOpen) {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(`${protocol}//${window.location.host}`);
+      
+      ws.onopen = () => { 
+        if (onOpen) onOpen(); 
+      };
+      
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        
+        if (msg.type === 'created') {
+          roomCode = msg.code;
+          isHost = true;
+          showPanel('host');
+          document.getElementById('hostRoomCode').textContent = roomCode;
+          updateHostUI(msg.drawn, msg.remaining);
+        }
+        
+        if (msg.type === 'joined') {
+          showPanel('player');
+          drawnNumbers = msg.drawn || [];
+          document.getElementById('playerStatus').textContent = 'Вы подключены к игре!';
+          renderCards();
+        }
+        
+        if (msg.type === 'number') {
+          drawnNumbers = msg.drawn || [];
+          if (isHost) {
+            document.getElementById('lastNum').textContent = msg.n;
+            updateHostUI(msg.drawn, msg.remaining);
+          } else {
+            checkAutoMarks(msg.n);
+          }
+        }
+        
+        if (msg.type === 'reset') {
+          drawnNumbers = [];
+          if (isHost) {
+            updateHostUI([], 90);
+          } else {
+            document.querySelectorAll('.cell.num').forEach(c => c.classList.remove('marked', 'wrong'));
+            document.getElementById('playerStatus').textContent = 'Игра начата заново!';
+            document.getElementById('playerStatus').classList.remove('win');
+          }
+        }
+        
+        if (msg.type === 'error') {
+          alert(msg.message);
+        }
+      };
+    }
+
+    function createGame() {
+      connect(() => ws.send(JSON.stringify({ type: 'create' })));
+    }
+
+    function joinGame() {
+      const code = document.getElementById('joinCode').value.trim();
+      if (!code) return alert('Введите код');
+      connect(() => ws.send(JSON.stringify({ type: 'join', code })));
+    }
+
+    // Ведущий
+    function drawNumber() { 
+      if (ws) ws.send(JSON.stringify({ type: 'draw' })); 
+    }
+    
+    function resetGame() { 
+      if (ws && confirm('Начать заново?')) {
+        ws.send(JSON.stringify({ type: 'reset' })); 
+      }
+    }
+
+    function updateHostUI(drawn, remaining) {
+      document.getElementById('hostStatus').textContent = `Осталось: ${remaining} | Вышло: ${drawn.length}`;
+      document.getElementById('drawnList').innerHTML = drawn.slice().reverse().map(n => `<span>${n}</span>`).join('');
+    }
+
+    // Игрок
+    function showPanel(name) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-' + name).classList.add('active');
+      if (name === 'player' && currentCards.length === 0) newCards();
+    }
+
+    function setCardCount(n) {
+      cardCount = n;
+      document.querySelectorAll('.count-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.count) === n));
+      newCards();
+    }
+
+    function newCards() {
+      currentCards = [];
+      for (let i = 0; i < cardCount; i++) {
+        currentCards.push(makeCard());
+      }
+      renderCards();
+    }
+
+    function renderCards() {
+      const area = document.getElementById('cardsArea');
+      area.innerHTML = '';
+      
+      currentCards.forEach((grid) => {
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'card-wrap';
+        
+        grid.forEach((row) => {
+          const rowDiv = document.createElement('div');
+          rowDiv.className = 'row';
+          
+          row.forEach((num) => {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            
+            if (num === null) { 
+              cell.classList.add('empty'); 
+            } else {
+              cell.classList.add('num');
+              cell.textContent = num;
+              cell.dataset.num = num;
+              cell.onclick = () => { 
+                cell.classList.toggle('marked'); 
+                checkWin(); 
+              };
+            }
+            rowDiv.appendChild(cell);
+          });
+          cardDiv.appendChild(rowDiv);
+        });
+        area.appendChild(cardDiv);
+      });
+    }
+
+    function checkAutoMarks(n) {
+      document.querySelectorAll('.cell.num').forEach(cell => {
+        if (parseInt(cell.dataset.num) === n) {
+          cell.style.boxShadow = '0 0 10px #f0c040';
+          setTimeout(() => cell.style.boxShadow = 'none', 2000);
+        }
+      });
+    }
+
+    function checkWin() {
+      let won = false;
+      
+      document.querySelectorAll('.card-wrap').forEach(card => {
+        card.querySelectorAll('.row').forEach(row => {
+          const cells = row.querySelectorAll('.cell.num');
+          if (cells.length > 0 && [...cells].every(c => c.classList.contains('marked'))) {
+            won = true;
+          }
+        });
+      });
+      
+      const st = document.getElementById('playerStatus');
+      if (won) { 
+        st.textContent = '🎉 СТРОКА СОБРАНА! Вы выиграли!'; 
+        st.classList.add('win'); 
+      } else {
+        st.classList.remove('win');
+      }
+    }
+  </script>
+</body>
+</html>
