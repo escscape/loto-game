@@ -75,7 +75,6 @@
       font-weight: bold; 
     }
     
-    /* Экран ведущего */
     .last { 
       font-size: 80px; 
       text-align: center; 
@@ -102,7 +101,6 @@
       font-weight: bold; 
     }
     
-    /* Карточки */
     .card-count { 
       display: flex; 
       align-items: center; 
@@ -152,7 +150,6 @@
     .cell.empty { background: #e0e0e0; }
     .cell.num { background: #f5f5f5; border: 2px solid #ccc; cursor: pointer; }
     .cell.num.marked { background: #4caf50; color: #fff; border-color: #2e7d32; }
-    .cell.num.wrong { background: #e53935; color: #fff; }
   </style>
 </head>
 <body>
@@ -287,7 +284,7 @@
       return rec(0, [5,5,5]);
     }
 
-    // WebSocket
+    // WebSocket подключение
     function connect(onOpen) {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       ws = new WebSocket(`${protocol}//${window.location.host}`);
