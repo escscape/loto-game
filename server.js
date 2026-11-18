@@ -7,10 +7,10 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-// Отдаём HTML-файл из папки public
-app.use(express.static(path.join(__dirname, 'public')));
+// Отдаём HTML-файл
+app.use(express.static(__dirname));
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.resolve(__dirname, 'index.html'));
 });
 
 // Хранилище комнат
