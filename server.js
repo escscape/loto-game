@@ -7,7 +7,7 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-// Отдаём HTML-файл
+// Отдаём HTML-файл из папки public
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -33,7 +33,7 @@ wss.on('connection', (ws) => {
       const code = Math.floor(1000 + Math.random() * 9000).toString();
       const bag = Array.from({ length: 90 }, (_, i) => i + 1);
       
-      // перемешиваем
+      // перемешиваем бочонки
       for (let i = bag.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [bag[i], bag[j]] = [bag[j], bag[i]];
@@ -65,7 +65,6 @@ wss.on('connection', (ws) => {
       ws.roomCode = code;
       room.clients.add(ws);
       
-      // Отправляем текущее состояние
       ws.send(JSON.stringify({ 
         type: 'joined', 
         drawn: room.drawn, 
